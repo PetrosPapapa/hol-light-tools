@@ -96,3 +96,13 @@ let dest_tuple tm =
   with Failure _ -> failwith "dest_tuple";;
 
 
+(* ------------------------------------------------------------------------- *)
+(* An often used shortcut that allows REPEATC for conversions that may not   *)
+(* affect the term, but won't fail either (such as REWRITE_CONV).            *)
+(* ------------------------------------------------------------------------- *)
+
+let REPEAT_CONV = REPEATC o CHANGED_CONV;;
+
+
+let is_strconst s tm = try ((fst o dest_const) tm = s) with Failure _ -> false;;
+let is_strcomb s tm = try ((fst o dest_const o fst o strip_comb) tm = s) with Failure _ -> false;;

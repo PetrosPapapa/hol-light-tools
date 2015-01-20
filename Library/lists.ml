@@ -8,6 +8,8 @@
 
 needs "IsabelleLight/make.ml";;
 
+let is_nil tm = try ( (fst o dest_const) tm = "NIL" ) with Failure _ -> false;;
+
 
 (* MEM *)
 
@@ -162,6 +164,12 @@ let DEL_RECURSION = prove(
 
 let [EMPTY_DEL;CONS_DEL] = CONJUNCTS DEL_RECURSION;;
 
+(* This version is better for computation. *)
+let CONS_DEL_REC = prove (
+   `(!h t x. CONS h t DEL x = APPEND (if h = x then [] else [h]) (t DEL x))`,
+    REWRITE_TAC[DEL_DEF;FILTER] THEN GEN_ALL_TAC THEN COND_CASES_TAC THEN simp[APPEND]);;
+
+
 let NOT_MEM_DEL = prove(`~(MEM x (l DEL x))`, GEN_ALL_TAC THEN REWRITE_TAC[DEL_DEF;MEM_FILTER]);;
 
 let MEM_DEL = prove (`!l x y. MEM x (l DEL y) <=> MEM x l /\ ~(x = y)`, GEN_ALL_TAC THEN REWRITE_TAC[DEL_DEF;MEM_FILTER;CONJ_SYM]);;
@@ -193,7 +201,25 @@ let APPEND_DEL = prove (`!k l x. APPEND k l DEL x = APPEND (k DEL x) (l DEL x)`,
 			 LIST_INDUCT_TAC THEN simp[APPEND;DEL_DEF;FILTER] THEN
 			 REPEAT GEN_TAC THEN COND_CASES_TAC THEN simp[APPEND;FILTER]);;
 
-				     
+(* ------------------------------------------------------------------------- *)
+(* Conversion to compute DEL as an operation.                                *)
+(* The eqconv parameter must be a conversion that can calculate equalities   *)
+(* between 2 elements of the list.                                           *)
+(* For example for (num)list you can use DEL_CONV NUM_REDUCE_CONV            *)
+(* ------------------------------------------------------------------------- *)
+
+let rec DEL_CONV eqconv tm =
+  let consconv tm = if is_cons tm then PATH_CONV "r" (DEL_CONV eqconv) tm else DEL_CONV eqconv tm in
+  try (
+  if ((is_const o rand o rator) tm) then
+  PURE_REWRITE_CONV[EMPTY_DEL] tm
+  else
+  (PURE_ONCE_REWRITE_CONV[CONS_DEL_REC] THENC
+			 PATH_CONV "lrllr" eqconv THENC
+			 REWRITE_CONV[APPEND] THENC consconv) tm
+  ) with Failure _ -> failwith "DEL_CONV";;
+
+
 (* DEL1 *)
 
 parse_as_infix ("DEL1",(21,"left"));;
@@ -232,6 +258,13 @@ let LDIFF_RECURSION = prove(
   REWRITE_TAC[LDIFF;FILTER] THEN GEN_ALL_TAC THEN COND_CASES_TAC THEN simp[]);;
 
 let [EMPTY_LDIFF;CONS_LDIFF] = CONJUNCTS LDIFF_RECURSION;;
+
+(* This version is better for computation. We end up using LDIFF_CONS which is even better. *)
+let CONS_LDIFF_REC = prove (
+   `(!h t l. (CONS h t) LDIFF l = APPEND (if (MEM h l) then [] else [h]) (t LDIFF l))`,
+    REWRITE_TAC[LDIFF;FILTER] THEN GEN_ALL_TAC THEN COND_CASES_TAC THEN simp[APPEND]);;
+
+
 
 let MEM_LDIFF = prove (`!x k l. MEM x (k LDIFF l) <=> MEM x k /\ ~(MEM x l)`,
 		        REWRITE_TAC[LDIFF;MEM_FILTER;CONJ_SYM]);;
@@ -287,3 +320,20 @@ let LDIFF_DISJOINT =
   prove (`!k l. k LDIFF l = [] <=> !(a:A) . MEM a k ==> MEM a l`,
 	 REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[right;left]);;
 
+
+(* ------------------------------------------------------------------------- *)
+(* Conversion to compute LDIFF as an operation.                              *)
+(* The eqconv parameter must be a conversion that can calculate equalities   *)
+(* between 2 elements of the list.                                           *)
+(* For example for (num)list you can use LDIFF_CONV NUM_REDUCE_CONV          *)
+(* ------------------------------------------------------------------------- *)
+
+let rec LDIFF_CONV eqconv tm =
+  try (
+  if ((is_nil o rand) tm) then
+  PURE_REWRITE_CONV[LDIFF_EMPTY] tm
+  else
+  (PURE_ONCE_REWRITE_CONV[LDIFF_CONS] THENC
+   PATH_CONV "lr" (DEL_CONV eqconv) THENC
+   LDIFF_CONV eqconv) tm
+  ) with Failure _ -> failwith "LDIFF_CONV";;
