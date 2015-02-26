@@ -81,4 +81,40 @@ let (ROTATE_N_TAC :int->tactic) =
 let (ROTATE_TAC :tactic) = (ROTATE_N_TAC 1);;
 
 
+(* ------------------------------------------------------------------------- *)
+(* CONTEXT_THEN:                                                             *)
+(* Instantiates type variables in a term before using it in a tactic.        *)
+(* Types are instantiated so that free variables in the term match the types *)
+(* of free variables with the same name in the goal.                         *)
+(* ------------------------------------------------------------------------- *)
+(* CONTEXT_TTHEN is used for thm_tactics.                                    *)
+(* ------------------------------------------------------------------------- *)
+(* This is different from the HOL4 approach in CONTEXT_TAC.                  *)
+(* In that, they parse strings and enforce the appropriate type.             *)
+(* Here, the term has already been typed and we instantiate the type         *)
+(* variables. This increases the overhead, but maintains the consistency of  *)
+(* having terms as arguments instead of strings (easier for the novice user).*)
+(* ------------------------------------------------------------------------- *)
 
+let (CONTEXT_THEN :(term -> tactic) -> term -> tactic) =
+  let trymatch = fun v1 v2 ->
+    match (term_match [v2] v1 v2) with
+	[],[],ti -> ti
+      | _  -> failwith "" in
+  
+  fun tac tm g ->
+    let gvs = gl_frees g
+    and tvs = frees tm in
+    let subs = mapfilter (fun x -> tryfind (trymatch x) gvs) tvs in
+    tac (inst (flat subs) tm) g;;
+
+let (CONTEXT_TTHEN:(term -> thm_tactic) -> term -> thm_tactic) =
+  fun ttac ->
+    C (fun thm -> CONTEXT_THEN (fun tm -> ttac tm thm));;
+
+
+(* Some useful context tactics. *)
+
+let C_EXISTS_TAC = CONTEXT_THEN MATCH_EXISTS_TAC;;
+let C_GEN_TAC = CONTEXT_THEN X_MATCH_GEN_TAC;;
+let C_CHOOSE_TAC = CONTEXT_TTHEN X_MATCH_CHOOSE_TAC;;

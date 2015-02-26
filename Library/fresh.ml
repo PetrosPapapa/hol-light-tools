@@ -15,6 +15,7 @@
 (* be extended in the future.                                                *)
 (* ========================================================================= *)
 
+needs "tools/Library/lists.ml";;
 
 (* ------------------------------------------------------------------------- *)
 (* Function that picks fresh names for a list of names using a choice        *)

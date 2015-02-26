@@ -58,7 +58,8 @@ let rec strip_munion =
 let rec adjust_munion_list_length empty n l  =
   if (length l = n) then l
   else if (length l < n) then adjust_munion_list_length empty n ([empty] @ l)
-  else adjust_munion_list_length empty n (((butlast o butlast)l) @ [mk_munion ((last o butlast) l,last
+  else adjust_munion_list_length empty n (((butlast o butlast)l) @ [mk_munion ((last o butlast) l,last l)]);;
+
 
 												  
 (* Theorems *)

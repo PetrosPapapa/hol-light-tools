@@ -7,6 +7,7 @@
 (* ========================================================================= *)
 
 needs "IsabelleLight/make.ml";;
+needs "tools/make.ml";;
 
 let is_nil tm = try ( (fst o dest_const) tm = "NIL" ) with Failure _ -> false;;
 
@@ -108,7 +109,17 @@ let ZIP_APPEND_MAP = prove (
   LIST_INDUCT_TAC THEN simp[MAP_APPEND;MAP;ZIP;APPEND]);;
 
 
+(* REVERSE *)
 
+let MEM_REVERSE = prove (`!x l. MEM x (REVERSE l) <=> MEM x l`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN simp[MEM_APPEND;MEM;REVERSE;DISJ_SYM]);;
+
+let SET_OF_LIST_REVERSE = prove (`!l. set_of_list (REVERSE l) = set_of_list l`,
+   LIST_INDUCT_TAC THEN simp[set_of_list;SET_OF_LIST_APPEND;REVERSE;APPEND] THEN SET_TAC[]);;
+
+let FILTER_REVERSE = prove (`!P l. FILTER P (REVERSE l) = REVERSE (FILTER P l)`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN simp[FILTER;REVERSE;APPEND;FILTER_APPEND] THEN
+   COND_CASES_TAC THEN simp[REVERSE;APPEND;APPEND_NIL]);;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -123,6 +134,9 @@ let ZIP_APPEND_MAP = prove (
 (* ------------------------------------------------------------------------- *)
 (* I decided to prove this more generally for any associative and            *)
 (* commutative function and thus created ITLIST_LINEAR.                      *)
+(* ------------------------------------------------------------------------- *)
+(* Note update: Now with the introduction of FOLDL I should be using that    *)
+(* instead.                                                                  *)
 (* ------------------------------------------------------------------------- *)
 
 let ITLIST_LINEAR = prove ( 
@@ -337,3 +351,36 @@ let rec LDIFF_CONV eqconv tm =
    PATH_CONV "lr" (DEL_CONV eqconv) THENC
    LDIFF_CONV eqconv) tm
   ) with Failure _ -> failwith "LDIFF_CONV";;
+
+
+(* FOLD *)
+(* Taken from HOL4 *)
+
+let FOLDR = new_recursive_definition list_RECURSION
+  `(!f e.     FOLDR (f:a->b->b) e [] = e) /\
+  (!f e x l. FOLDR f e (CONS x l) = f x (FOLDR f e l))`;;
+
+let FOLDL = new_recursive_definition list_RECURSION
+  `(!f e. FOLDL (f:b->a->b) e [] = e) /\
+  (!f e x l. FOLDL f e (CONS x l) = FOLDL f (f e x) l)`;;
+
+let FOLDR_EQ_ITLIST = prove (`!l f e. FOLDR f e l = ITLIST f l e`,
+   LIST_INDUCT_TAC THEN ASM SIMP_TAC[FOLDR;ITLIST]);;
+
+(* let FOLDL_EQ_FOLDR = prove (  
+  `!f l e. (ASSOC f /\ COMM f) ==>
+   ((FOLDL f e l) = (FOLDR f e l))`, ...);; *)
+
+let FOLDR_CONS = prove (
+  `!f ls a. FOLDR (\x y. CONS (f x) y) a ls = APPEND (MAP f ls) a`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM SIMP_TAC[FOLDR;MAP;APPEND;CONS_11]);;
+
+
+let FOLDL_APPEND = prove (
+   `!k l f e. FOLDL f e (APPEND k l) = FOLDL f (FOLDL f e k) l`,
+   LIST_INDUCT_TAC THEN simp[FOLDL;APPEND]);;
+
+let FOLDL_REVERSE_EQ_FOLDR = prove (
+   `!l f e. FOLDL f e (REVERSE l) = FOLDR (\x y. f y x) e l`,
+   LIST_INDUCT_TAC THEN simp[FOLDL;FOLDR;REVERSE;FOLDL_APPEND]);;
+

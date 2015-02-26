@@ -32,33 +32,6 @@ let rec print_depth depth prn arg =
     | _ -> (print_string " " ; print_depth (depth -1) prn arg);;
 
 
-
-(* ------------------------------------------------------------------------- *)
-(* print_varandtype, show_types, hide_types:                                 *)
-(* Prints the type after each variable.  Useful for "debugging" type issues. *)
-(* ------------------------------------------------------------------------- *)
-(* Source:                                                                   *)
-(* http://code.google.com/p/flyspeck/wiki/TipsAndTricks#Investigating_Types  *)
-(* ------------------------------------------------------------------------- *)
-
-let print_varandtype fmt tm =
-  let hop,args = strip_comb tm in
-  let s = name_of hop
-  and ty = type_of hop in
-  if is_var hop & args = [] then
-   (pp_print_string fmt "(";
-    pp_print_string fmt s;
-    pp_print_string fmt ":";
-    pp_print_type fmt ty;
-    pp_print_string fmt ")")
-  else fail() ;;
-
-let show_types,hide_types =
-  (fun () -> install_user_printer ("Show Types",print_varandtype)),
-  (fun () -> try delete_user_printer "Show Types"
-             with Failure _ -> failwith ("hide_types: "^
-                                         "Types are already hidden."));;
-
 (* ------------------------------------------------------------------------- *)
 (* print_goalstack_all :                                                     *) 
 (* Alternative goalstack printer that always prints all subgoals.            *)
@@ -77,7 +50,7 @@ let (print_goalstack_all:goalstack->unit) =
     let s = if n = 0 then "No subgoals" else
               (string_of_int k)^" subgoal"^(if k > 1 then "s" else "")
            ^" ("^(string_of_int n)^" total)" in
-    let print_mv v = print_string " `" ; print_varandtype v ; print_string "`;" in
+    let print_mv v = print_string " `" ; print_varandtype std_formatter v ; print_string "`;" in
     print_string s; print_newline();
     if (length mvs > 0) then (
       print_string "Metas:" ; let _ = map print_mv mvs in () ; print_newline()
