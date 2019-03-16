@@ -4,8 +4,109 @@
 (*                            Petros Papapanagiotou                          *)
 (*              Center of Intelligent Systems and their Applications         *)
 (*                           University of Edinburgh                         *)
-(*                                 2010-2015                                 *)
+(*                                 2010-2017                                 *)
 (* ========================================================================= *)
+
+needs "IsabelleLight/support.ml";; (* for print_varandtype *)
+
+(* ------------------------------------------------------------------------- *)
+(* Remove all elements of list r from list l ONCE.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let rec remove_list l r =
+  match r with
+    | [] -> l
+    | h::t ->
+      let res = try (snd (remove (fun x -> x = h) l)) with Failure _ -> l in
+      remove_list res t;;
+
+(* ------------------------------------------------------------------------- *)
+(* Same, but removes elements from both lists.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let remove_common_once wlist tlist =
+  let rec remove_common' =
+    fun acc wlist tlist -> 
+      if (wlist = []) then rev acc,tlist else
+	try (
+	  let y,tlist' = remove (fun t -> t = hd wlist) tlist in
+	  remove_common' acc (tl wlist) tlist'
+	) with Failure _ ->
+	  remove_common' ((hd wlist)::acc) (tl wlist) tlist in
+  remove_common' [] wlist tlist;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Partitions a list by filtering through each element of another list using *)
+(* function f. Each element is removed once.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let partition_list f l t =
+  let pick x l,r =
+    let i,rest = remove (f x) r in
+    i::l,rest in
+  itlist pick l ([],t);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* The following functions allow us to iterate over all possible subsets of  *)
+(* a list in a lazy manner.                                                  *)
+(* First we create an index  list of 0s that has the size of the given list. *)
+(* This corresponds to the empty subset.                                     *)
+(* Each possible subset is then obtained by adding 1 to the binary number    *)
+(* represented by the index list. Each member in the index list signifies    *)
+(* whether or not the element in the same position in the main list will be  *)
+(* included in the subset.                                                   *)
+(* e.g. for list [1,2,3,4,5], the index list [1,0,0,1,0] corresponds to      *)
+(* subset [1.4].                                                             *)
+(* This way, instead of pre-calculating all 2^n subsets, we just hold a      *)
+(* single index list of size n in memory.                                    *)
+(* ------------------------------------------------------------------------- *)
+(* createSubsetIndex creates a list of 0s of size (length l).                *)
+(* ------------------------------------------------------------------------- *)
+(* nextSubsetIndex adds 1 to the binary number represented by the index list *)
+(* effectively obtaining the next subset.                                    *)
+(* Returns "None" when we try to add 1 to a list of 1s (we have traversed all*)
+(* subsets).                                                                 *)
+(* ------------------------------------------------------------------------- *)
+(* getIndexedSubset retrieves the actual subset corrsponding to a given      *)
+(* index list.                                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let rec nextSubsetIndex l =
+  match l with
+    | [] -> None
+    | (h :: tl) ->
+	if (h == 0) then Some(1 :: tl)
+	else match (nextSubsetIndex(tl)) with
+	       | None -> None
+	       | Some(ntl) -> Some(0 :: ntl);;
+				  
+let rec getIndexedSubset index l =
+  match (index,l) with
+    | [],[] -> []
+    | (ih :: it),(lh :: lt) ->
+	if (ih > 0) then lh :: (getIndexedSubset it lt) else getIndexedSubset it lt
+    | _ -> failwith "getIndexedSubset";;
+		    
+let createSubsetIndex l =
+  let rec subsetIndex n index =
+    if (n == 0) then index
+    else subsetIndex (n-1) (0 :: index) in
+  subsetIndex (length l) [];;
+	      
+
+(* ------------------------------------------------------------------------- *)
+(* Topological sort for a dependency tree.                                   *)
+(* Perhaps not the most efficient, but it will do.                           *)
+(* ------------------------------------------------------------------------- *)
+
+let rec dependency_sort isParentOf l =
+  match l with 
+    | [] -> []
+    | (h::t) -> 
+	let deps,nodeps = partition (isParentOf h) t in
+	(dependency_sort isParentOf deps) @ [h] @ (dependency_sort isParentOf nodeps);;
 
 (* ------------------------------------------------------------------------- *)
 (* Apply a function to both members of a pair. Same as 'f ## f' in HOL4.     *)
@@ -135,3 +236,59 @@ let e_all tac =
    ) in f c;;
 
 
+(* ------------------------------------------------------------------------- *)
+(* refine for any goalstate.                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+let (refinestack:refinement->goalstack->goalstack) =
+  fun r gs ->
+    if gs = [] then failwith "No current goal" else
+    let h = hd gs in
+    r h :: gs;;
+
+(* ------------------------------------------------------------------------- *)
+(* e for any goalstate.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let (apply_tac:tactic->goalstack->goalstack) =
+  fun tac gs -> refinestack (by(VALID tac)) gs;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* top_thm for any goalstate.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+let get_thm (gs:goalstack) =
+  let (_,[],f)::_ = gs in
+  f null_inst [] ;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Timing.                                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let my_timestamp = ref 0.0;;
+
+let truncate_float n f =
+  let factor = 10.0 ** (float_of_int n) in
+  ((float_of_int o truncate) (f *. factor)) /. factor;;
+
+let reset_time () = my_timestamp := Sys.time();;
+let get_time () = truncate_float 4 (Sys.time() -. (!my_timestamp));;
+let rget_time() = let t = get_time () in reset_time (); t;;
+
+let stime s f x =
+  let start_time = Sys.time() in
+  try let result = f x in
+      let finish_time = Sys.time() in
+      report(s ^ ": "^(string_of_float(truncate_float 4 (finish_time -. start_time))));
+      result
+  with e ->
+      let finish_time = Sys.time() in
+      Format.print_string(s ^ " - FAILED: "^
+                          (string_of_float(truncate_float 4 (finish_time -. start_time))));
+      print_newline();
+      raise e;;
+
+let TIME_TAC s (tac:tactic) gl =
+  stime s tac gl;;

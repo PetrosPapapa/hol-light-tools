@@ -3,7 +3,7 @@
 (*                                                                           *)
 (*                            Petros Papapanagiotou                          *)
 (*                           University of Edinburgh                         *)
-(*                                 2010 - 2015                               *)
+(*                                 2010 - 2017                               *)
 (* ========================================================================= *)
 
 needs "IsabelleLight/make.ml";;

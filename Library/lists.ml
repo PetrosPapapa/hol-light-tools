@@ -3,7 +3,7 @@
 (*                                                                           *)
 (*                            Petros Papapanagiotou                          *)
 (*                           University of Edinburgh                         *)
-(*                                 2010 - 2014                               *)
+(*                                 2010 - 2017                               *)
 (* ========================================================================= *)
 
 needs "IsabelleLight/make.ml";;
@@ -26,7 +26,14 @@ let MEM_EX_EQ = prove (`! x l . MEM x l <=> EX (\a . x = a) l`,
 
 (*  !x l. ~MEM x l <=> ALL (\x'. ~(x = x')) l *)
 let NOT_MEM_ALL_DIFF = ((REWRITE_RULE [NOT_EX]) o (ONCE_REWRITE_RULE [TAUT `(a <=> b) <=> (~a <=> ~b)`])) MEM_EX_EQ;;
-  
+
+
+let MEM_NEQ_NON_MEM = prove (
+  `!a b l. MEM a l ==> ~MEM b l ==> ~(a=b)`,
+  GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN ASM SIMP_TAC[MEM;DE_MORGAN_THM] THEN ASM MESON_TAC[]);;
+
+
+
 (* APPEND *)
 
 let APPEND_EQ = prove (`!a b c . APPEND a b = APPEND a c <=> b = c`,

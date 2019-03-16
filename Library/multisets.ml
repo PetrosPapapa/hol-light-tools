@@ -20,6 +20,10 @@ override_interface("^",`(munion)`);;
 unspaced_binops := ["^";"'"] @ (!unspaced_binops);;
 
 (* Tools *)
+let is_mempty tm =
+  try fst(dest_const tm) = "mempty"
+  with Failure _ -> false;;
+
 let is_msing tm = 
   try fst(dest_const(rator tm)) = "msing"
   with Failure _ -> false;;
@@ -91,5 +95,13 @@ let NORM_MSET_CONV = PURE_REWRITE_CONV[MUNION_AC;MUNION_EMPTY;MUNION_EMPTY2];;
 (* Attempt to prove that two multisets are equal. *)
 (* Quite useful because the multisets in the result are not normalized. *)
 
-let multiset_eq tm1 tm2 =
-  TRANS (NORM_MSET_CONV tm1) ((GSYM o NORM_MSET_CONV) tm2);;
+let PROVE_MULTISET_EQ tm1 tm2 =
+  try (TRANS (NORM_MSET_CONV tm1) ((GSYM o NORM_MSET_CONV) tm2))
+  with Failure _ -> failwith ("multiset_eq `"^(string_of_term tm1)
+			      ^"` `"^(string_of_term tm2)^"`");;
+
+let multiset_is_eq lh rh =
+  let largs = (filter (not o is_mempty) o flat_munion) lh 
+  and rargs = (filter (not o is_mempty) o flat_munion) rh in
+  forall (fun x -> mem x rargs) largs;;
+ 

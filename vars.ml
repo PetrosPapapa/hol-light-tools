@@ -6,6 +6,8 @@
 (*                                 2010 - 2014                               *)
 (* ========================================================================= *)
 
+needs "IsabelleLight/make.ml";;
+
 (* Match 2 variables *)
 (* (Can't remember... is this alpha equivalence?) *)
 

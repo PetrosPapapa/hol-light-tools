@@ -1122,15 +1122,6 @@ let FUPDATE_RLIST_NORMALISE_CONV =
 
 
 (*
-open HolKernel Parse boolLib IndDefLib numLib pred_setTheory
-     sumTheory pairTheory BasicProvers bossLib metisLib
-     simpLib;
-load "src/finite_map/finite_mapLib";
-open finite_mapTheory;
-set_trace "PP.avoid_unicode" 1;
- *)
-
-(*
 let xfm = list_mk_fupdate (`FEMPTY:(num,num)fmap`,[`1,2`;`2,3`;`3,4`;`4,5`;`1,6`;`2,7`]);;
 let xfml = mk_fupdate_list `FEMPTY:(num,num)fmap` `[1,2;2,3;3,4;4,5;1,6;2,7]`;;
  *)

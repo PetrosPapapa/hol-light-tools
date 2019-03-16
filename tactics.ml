@@ -6,12 +6,14 @@
 (*                                 2010 - 2015                               *)
 (* ========================================================================= *)
 
+(* ------------------------------------------------------------------------- *)
+(* Modus ponens tactics.                                                     *)
+(* ------------------------------------------------------------------------- *)
 
 let MP_THEN thmtc = fun x -> FIRST_ASSUM (fun y -> (thmtc (MP x y)));;
 let MATCH_MP_THEN thmtc = fun x -> FIRST_ASSUM (fun y -> (thmtc (MATCH_MP x y)));;
 let EQ_MP_THEN thmtc = fun x -> FIRST_ASSUM (fun y -> (thmtc (EQ_MP x y)));;
 
-let ITLIST_TAC tac l = itlist (THEN) (map tac l) ALL_TAC;;
 
 (* ------------------------------------------------------------------------- *)
 (* Copies a labelled assumption giving it a new unique label.                *)
@@ -32,7 +34,7 @@ let (COPY_TAC:(string * string)->tactic) =
    ) with Failure _ ->
      (warn true ("COPY_TAC: could not find assumption "^s) ; ALL_TAC gl);;
  
-let COPYL_TAC l = ITLIST_TAC COPY_TAC l;;
+let COPYL_TAC l = MAP_EVERY COPY_TAC l;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -49,7 +51,7 @@ let (RENAME_TAC:(string * string)->tactic) =
    ) with Failure _ ->
      (warn true ("RENAME_TAC: could not find assumption "^s) ; ALL_TAC gl);;
  
-let RENAMEL_TAC l = ITLIST_TAC RENAME_TAC l;;
+let RENAMEL_TAC l = MAP_EVERY RENAME_TAC l;;
 
 
 let REMOVE_TAC s = REMOVE_THEN s (fun x -> ALL_TAC);;
@@ -118,3 +120,33 @@ let (CONTEXT_TTHEN:(term -> thm_tactic) -> term -> thm_tactic) =
 let C_EXISTS_TAC = CONTEXT_THEN MATCH_EXISTS_TAC;;
 let C_GEN_TAC = CONTEXT_THEN X_MATCH_GEN_TAC;;
 let C_CHOOSE_TAC = CONTEXT_TTHEN X_MATCH_CHOOSE_TAC;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* META_SPEC_ALL_TAC:                                                        *)
+(* Like META_SPEC_TAC but specialises all universally quantified variables.  *)
+(* ------------------------------------------------------------------------- *)
+(* META_SPEC_ALL_LABEL_TAC:                                                  *)
+(* Same as META_SPEC_ALL_TAC but also adds a label to the assumption.        *)
+(* ------------------------------------------------------------------------- *)
+
+let (META_SPEC_ALL_LABEL_TAC: string -> thm -> tactic) =
+  fun lbl thm (asl,w) ->
+    try (
+      let vars,_ = strip_forall (concl thm) in
+      let sth = SPECL vars thm in
+      (vars,null_inst),[((lbl,sth)::asl),w],
+      fun i [th] -> PROVE_HYP (SPECL (map (instantiate i) vars) thm) th
+    ) with Failure _ -> failwith "META_SPEC_ALL_TAC";;
+
+let (META_SPEC_ALL_TAC: thm -> tactic) = META_SPEC_ALL_LABEL_TAC "";;
+
+
+let REMOVE_ALL_ASSUMS_TAC = REPEAT (POP_ASSUM (fun x -> ALL_TAC));;
+
+let REMOVE_ASSUMS_TAC l = MAP_EVERY (fun s -> REMOVE_THEN s (fun x -> ALL_TAC)) l;;
+let KEEP_ASSUMS_TAC:string list -> tactic =
+  fun l (asl,w) ->
+  let remove = subtract (map fst asl) l in
+  REMOVE_ASSUMS_TAC remove (asl,w);;
+

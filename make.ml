@@ -4,7 +4,7 @@
 (*                                                                           *)
 (*                           Petros Papapanagiotou                           *)
 (*                          University of Edinburgh                          *)
-(*                                2010 - 2015                                *)
+(*                                2010 - 2016                                *)
 (* ========================================================================= *)
 
 loads ("tools/lib.ml");;
@@ -13,3 +13,5 @@ loads ("tools/terms.ml");;
 loads ("tools/tactics.ml");;
 loads ("tools/rules.ml");;
 loads ("tools/proofcounter.ml");;
+loads ("tools/proofcounter.ml");;
+loads ("tools/etactics.ml");;

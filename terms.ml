@@ -86,6 +86,15 @@ let rec list_find_term f alist =
   else try let _ = find_term f (hd alist) in hd alist with Failure _ -> list_find_term f (tl alist);;
 
 
+(* ------------------------------------------------------------------------- *)
+(* Create a tuple out of a list of terms.                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let mk_tuple tl =
+  match tl with
+    | [] -> failwith "mk_tuple"
+    | [h] -> h
+    | _ -> itlist (curry mk_pair) (butlast tl) (last tl);;
 
 (* ------------------------------------------------------------------------- *)
 (* Convert a term that is a tuple into a list of its element terms.          *)
@@ -106,3 +115,8 @@ let REPEAT_CONV = REPEATC o CHANGED_CONV;;
 
 let is_strconst s tm = try ((fst o dest_const) tm = s) with Failure _ -> false;;
 let is_strcomb s tm = try ((fst o dest_const o fst o strip_comb) tm = s) with Failure _ -> false;;
+
+let type_matches tp tm =
+  try (
+  let _ = type_match tp (type_of tm) [] in true )
+  with Failure _ -> false;;
