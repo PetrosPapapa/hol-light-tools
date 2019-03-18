@@ -209,12 +209,13 @@ let MSET_PROVE_HYP ath bth =
   try (
     let hyps = map (snd o strip_forall) (hyp bth)
     and con = (snd o strip_forall o concl) ath in
-    let mhyp = find (fun x -> seq_eq con x) hyps in
+    match List.find_opt (fun x -> seq_eq con x) hyps with
+      None -> bth 
+      | Some(mhyp) ->
     let eq = PROVE_MULTISET_EQ (concl ath) mhyp in
     let ath' = EQ_MP eq ath in
     EQ_MP (DEDUCT_ANTISYM_RULE ath' bth) ath'
-  ) with Failure s -> print_string ("ATH: " ^ (string_of_thm ath) ^ "\nBTH: " ^ (string_of_thm bth) ^"\n"); failwith ("MSET_PROVE_HYP: " ^ s);;   
-
+  ) with Failure s -> print_string ("ATH: " ^ (string_of_thm ath) ^ "\nBTH: " ^ (string_of_thm bth) ^"\n"); failwith ("MSET_PROVE_HYP: " ^ s);;  
 
 let NORM_MSET_INST_ALL i thm = (NORMALIZE_MULTISET_ALL o INSTANTIATE_ALL i) thm;;
 
