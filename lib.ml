@@ -9,6 +9,17 @@
 
 needs "IsabelleLight/support.ml";; (* for print_varandtype *)
 
+
+(* ------------------------------------------------------------------------- *)
+(* Same as tryfind, but also returns the updated list without the element.   *)
+(* ------------------------------------------------------------------------- *)
+
+let rec tryremove p l =
+  match l with
+    [] -> failwith "tryremove"
+  | (h::t) -> try (p h),t with Failure _ -> 
+              let y,r = tryremove p t in y,h::r;;
+
 (* ------------------------------------------------------------------------- *)
 (* Remove all elements of list r from list l ONCE.                           *)
 (* ------------------------------------------------------------------------- *)

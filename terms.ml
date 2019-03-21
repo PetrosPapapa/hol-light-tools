@@ -60,19 +60,15 @@ let can_match consts tm target =
 (* their order.                                                              *)
 (* Makes sure no term from tlist is matched to twice.                        *)
 (* Fails if no match is found for any of the members of wlist.               *)
-(* Invokes term_match twice for every match, but I can't think of a better   *)
-(* way to do this at the moment.                                             *)
 (* ------------------------------------------------------------------------- *)
 
 let rec term_match_list =
   fun avoids wlist tlist -> 
     if (wlist = []) then null_inst else
-    let y,tlist = try remove (
-      fun t -> 
-	try (let _ = term_match avoids (hd wlist) t in true) 
-	with Failure _ -> false
-     ) tlist with Failure _ -> failwith ("match_list: No match for `" ^ string_of_term (hd wlist) ^ "`!") in
-    compose_insts (term_match avoids (hd wlist) y) (term_match_list avoids (tl wlist) tlist);;
+    let i,tlist = try tryremove (
+      fun t ->  term_match avoids (hd wlist) t
+     ) tlist with Failure _ -> failwith ("match_list: No match for `" ^ string_of_term (hd wlist) ^ "`") in
+    compose_insts i (term_match_list avoids (tl wlist) tlist);;
 
 (* Some debugging prints that I have not yet cleaned up... *)
 (*   print_string ("Matched: `" ^ string_of_term (hd wlist) ^ "` to `" ^ string_of_term y ^"` leaving the rest:") ; 
