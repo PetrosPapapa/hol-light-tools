@@ -71,6 +71,13 @@ let partition_list f l t =
 
 
 (* ------------------------------------------------------------------------- *)
+(* Adds an integer index to every element of a list.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let index_list l = zip (0--(length l - 1)) l ;;
+
+
+(* ------------------------------------------------------------------------- *)
 (* The following functions allow us to iterate over all possible subsets of  *)
 (* a list in a lazy manner.                                                  *)
 (* First we create an index  list of 0s that has the size of the given list. *)
