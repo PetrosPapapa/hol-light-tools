@@ -6,6 +6,8 @@
 (*                                 2010 - 2014                               *)
 (* ========================================================================= *)
 
+needs("tools/lib.ml");;
+
 (* ------------------------------------------------------------------------- *)
 (* Determine the size of a term based on the number of combinators:          *)
 (* term_size (a comb b comb c)  = 1 + (term_size a) + (term_size b)          *)
@@ -57,22 +59,36 @@ let can_match consts tm target =
 
 (* ------------------------------------------------------------------------- *)
 (* Tries to match every term in wlist with a term in tlist, regardless of    *) 
-(* their order.                                                              *)
+(* their order using a term matching function f.                             *)
 (* Makes sure no term from tlist is matched to twice.                        *)
 (* Fails if no match is found for any of the members of wlist.               *)
 (* ------------------------------------------------------------------------- *)
 
-let rec term_match_list =
-  fun avoids wlist tlist -> 
+let rec match_list =
+  fun f wlist tlist -> 
     if (wlist = []) then null_inst else
-    let i,tlist = try tryremove (
-      fun t ->  term_match avoids (hd wlist) t
-     ) tlist with Failure _ -> failwith ("match_list: No match for `" ^ string_of_term (hd wlist) ^ "`") in
-    compose_insts i (term_match_list avoids (tl wlist) tlist);;
+    let i,tlist = try tryremove (f (hd wlist)) tlist 
+                  with Failure _ -> failwith ("match_list: No match for `" ^ string_of_term (hd wlist) ^ "`") in
+    compose_insts i (match_list f (tl wlist) tlist);;
+
 
 (* Some debugging prints that I have not yet cleaned up... *)
 (*   print_string ("Matched: `" ^ string_of_term (hd wlist) ^ "` to `" ^ string_of_term y ^"` leaving the rest:") ; 
    print_newline(); print_tml tlist ; print_newline() ; *)
+
+
+(* ------------------------------------------------------------------------- *)
+(* match_list using term_match                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let term_match_list avoids wlist tlist = match_list (term_match avoids) wlist tlist ;;
+
+(* ------------------------------------------------------------------------- *)
+(* match_list using term_match                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let term_unify_list metas wlist tlist = match_list (term_unify metas) wlist tlist ;;
+
 
 
 (* Apply find_term to each member of a list until one is found.              *)
