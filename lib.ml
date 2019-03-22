@@ -21,6 +21,17 @@ let rec tryremove p l =
               let y,r = tryremove p t in y,h::r;;
 
 (* ------------------------------------------------------------------------- *)
+(* Same as tryremove, but also returns the element that was removed (paired).*)
+(* ------------------------------------------------------------------------- *)
+
+let rec tryremove' p l =
+  match l with
+    [] -> failwith "tryremove"
+  | (h::t) -> try (h,(p h)),t with Failure _ -> 
+              let y,r = tryremove' p t in y,h::r;;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Remove all elements of list r from list l ONCE.                           *)
 (* ------------------------------------------------------------------------- *)
 
