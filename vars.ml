@@ -18,14 +18,21 @@ let vars_match v1 v2 =
 
 
 (* ------------------------------------------------------------------------- *)
+(* Renames a variable with a given function. *)
+(* ------------------------------------------------------------------------- *)
+
+let rename_var: (string -> string) -> term -> term =
+  fun f tm -> 
+  let name,ty = dest_var tm in
+  mk_var(f name,ty);;
+
+
+(* ------------------------------------------------------------------------- *)
 (* Given a variable, add a number to its name, then return it.               *)
 (* ------------------------------------------------------------------------- *)
 
 let number_var: int -> term -> term =
-  fun int tm -> 
-	      let name,ty = dest_var tm in
-              mk_var(name^(string_of_int int),ty);;
-
+  fun int tm -> rename_var (fun s -> s^(string_of_int int)) tm;;
 
 (* ------------------------------------------------------------------------- *)
 (* number_var for a list of variables.                                       *)
@@ -80,7 +87,36 @@ let number_vars_meta_rule: int -> meta_rule -> meta_rule =
   fun i rl -> inst_meta_rule (number_vars_inst i (meta_rule_frees rl)) rl;;
 
 
+(* ------------------------------------------------------------------------- *)
+(* Eliminate numbers from variable names 
+   This is useful for renaming variables that you want to reuse in derived 
+   rules.
+*)
+(* ------------------------------------------------------------------------- *)
 
+let unnumber_var = 
+  let mapNums c = match c with 
+      "0" -> "O"
+    | "1" -> "I"
+    | "2" -> "R"
+    | "3" -> "E"
+    | "4" -> "A"
+    | "5" -> "S"
+    | "6" -> "G"
+    | "7" -> "T"
+    | "8" -> "B"
+    | "9" -> "P"
+    | s -> s in
+  rename_var (implode o map mapNums o explode);;
+
+(* ------------------------------------------------------------------------- *)
+(* unnumber_vars for a term.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let unnumber_vars_tm: term -> term =
+  fun tm -> 
+  let sub = map (fun v -> unnumber_var v,v) (frees tm) in
+  subst sub tm;;
 
 
 (* ------------------------------------------------------------------------- *)
