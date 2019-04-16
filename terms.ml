@@ -98,6 +98,20 @@ let rec list_find_term f alist =
   else try let _ = find_term f (hd alist) in hd alist with Failure _ -> list_find_term f (tl alist);;
 
 
+(* ------------------------------------------------------------------------- 
+Create a chain of (right-associative) combs over a list
+e.g.
+# fold_comb `(==>)` [`p:bool`;`q:bool`;`r:bool`];;
+val it : term = `p ==> q ==> r`
+   ------------------------------------------------------------------------- *)
+
+let fold_comb op tl =
+  match tl with
+    | [] -> op
+    | [h] -> mk_comb(op,h)
+    | _ -> itlist (fun x y -> list_mk_comb (op,[x;y])) (butlast tl) (last tl);;
+
+
 (* ------------------------------------------------------------------------- *)
 (* Create a tuple out of a list of terms.                                    *)
 (* ------------------------------------------------------------------------- *)
@@ -132,3 +146,4 @@ let type_matches tp tm =
   try (
   let _ = type_match tp (type_of tm) [] in true )
   with Failure _ -> false;;
+
