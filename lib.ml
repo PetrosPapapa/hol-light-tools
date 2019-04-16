@@ -76,6 +76,13 @@ let partition_list f l t =
 
 let index_list l = zip (0--(length l - 1)) l ;;
 
+(* ------------------------------------------------------------------------- 
+Add/update an associative 
+*)
+
+let assoc_add a b l =
+  (a,b) :: (List.remove_assoc a l);;
+
 
 (* ------------------------------------------------------------------------- *)
 (* The following functions allow us to iterate over all possible subsets of  *)
