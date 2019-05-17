@@ -17,7 +17,16 @@ let vars_match v1 v2 =
     try ( let _ = term_match [v1] v1 v2 in true ) with Failure _ -> false
   else false;;
 
+(*
+  Find a free var in a term by name.
+*)
+(* ------------------------------------------------------------------------- *)
 
+let find_var: string -> term -> term =
+  fun n tm ->
+  let f v = try ( n = (fst o dest_var) v ) with Failure _ -> false in
+  find f (frees tm);;
+  
 (* ------------------------------------------------------------------------- *)
 (* Apply a function to all free variables in a term.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -49,7 +58,6 @@ let mapvars_meta_rule: (term -> term) -> meta_rule -> meta_rule =
   let vars = meta_rule_frees rl in
   let inst = itinst f vars in
   inst_meta_rule inst rl;;
-
 
 
 (* ------------------------------------------------------------------------- *)
