@@ -3,7 +3,7 @@
 (*                                                                           *)
 (*                            Petros Papapanagiotou                          *)
 (*                           University of Edinburgh                         *)
-(*                                 2010 - 2014                               *)
+(*                                 2010 - 2019                               *)
 (* ========================================================================= *)
 
 needs("tools/lib.ml");;
@@ -146,4 +146,24 @@ let type_matches tp tm =
   try (
   let _ = type_match tp (type_of tm) [] in true )
   with Failure _ -> false;;
+
+
+(* ------------------------------------------------------------------------- *)
+(* 
+   Apply a function to a term and then generate the corresponding 
+   instantiation.
+*)
+(* ------------------------------------------------------------------------- *)
+
+let mapinst: (term -> term) -> term -> instantiation = 
+  fun f tm -> term_match [] tm (f tm);;
+
+(* ------------------------------------------------------------------------- *)
+(* 
+   Apply term_finst to a list of terms and compose all the instantiations.
+*)
+(* ------------------------------------------------------------------------- *)
+
+let itinst: (term -> term) -> term list -> instantiation = 
+  fun f tms -> itlist compose_insts (map (mapinst f) tms) null_inst;;
 

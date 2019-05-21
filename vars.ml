@@ -3,10 +3,11 @@
 (*                                                                           *)
 (*                            Petros Papapanagiotou                          *)
 (*                           University of Edinburgh                         *)
-(*                                 2010 - 2014                               *)
+(*                                 2010 - 2019                               *)
 (* ========================================================================= *)
 
 needs "IsabelleLight/make.ml";;
+needs "tools/terms.ml";;
 
 (* Match 2 variables *)
 (* (Can't remember... is this alpha equivalence?) *)
@@ -16,8 +17,6 @@ let vars_match v1 v2 =
     try ( let _ = term_match [v1] v1 v2 in true ) with Failure _ -> false
   else false;;
 
-
-(* ------------------------------------------------------------------------- *)
 (*
   Find a free var in a term by name.
 *)
@@ -27,6 +26,38 @@ let find_var: string -> term -> term =
   fun n tm ->
   let f v = try ( n = (fst o dest_var) v ) with Failure _ -> false in
   find f (frees tm);;
+  
+(* ------------------------------------------------------------------------- *)
+(* Apply a function to all free variables in a term.                         *)
+(* ------------------------------------------------------------------------- *)
+
+let mapvars: (term -> term) -> term -> term =
+  fun f tm -> 
+  let vars = frees tm in
+  let sub = zip (map f vars) vars in
+  vsubst sub tm;; 
+
+
+(* ------------------------------------------------------------------------- *)
+(* Apply a function to all free variables in a theorem.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let mapvars_thm: (term -> term) -> thm -> thm =
+  fun f thm ->
+  let vars = thm_frees thm in
+  let sub = zip (map f vars) vars in
+  INST sub thm;; 
+
+
+(* ------------------------------------------------------------------------- *)
+(* Apply a function to all free variables in a meta_rule.                    *)
+(* ------------------------------------------------------------------------- *)
+
+let mapvars_meta_rule: (term -> term) -> meta_rule -> meta_rule =
+  fun f rl -> 
+  let vars = meta_rule_frees rl in
+  let inst = itinst f vars in
+  inst_meta_rule inst rl;;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -37,6 +68,17 @@ let rename_var: (string -> string) -> term -> term =
   fun f tm -> 
   let name,ty = dest_var tm in
   mk_var(f name,ty);;
+
+
+(* ------------------------------------------------------------------------- *)
+(* Apply rename_var to an instlist (see Isabelle Light).                     *)
+(* If you rename the variables of a theorem/meta_rule, you want their        *)
+(* references in the instlist to have matching names.                        *)
+(* ------------------------------------------------------------------------- *)
+
+let rename_vars_instlist: (string -> string) -> (term * term) list -> (term * term) list = 
+  fun f -> map (fun x,y -> rename_var f x,y);;
+
 
 
 (* ------------------------------------------------------------------------- *)
@@ -63,41 +105,33 @@ let number_vars: int -> term list -> term list =
 let number_vars_instlist: int -> (term * term) list -> (term * term) list = 
   fun i -> map (fun x,y -> number_var i x,y);;
 
-
 (* ------------------------------------------------------------------------- *)
-(* Same as number_vars, but returns the composed instantiation for all vars. *)
-(* ------------------------------------------------------------------------- *)
-
-let number_vars_inst: int -> term list -> instantiation = 
-  fun i vars ->
-    let pairs = zip vars (number_vars i vars) in
-    let insts = map (fun x,y -> term_match [] x y) pairs in 
-    itlist compose_insts insts null_inst;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* number_vars for a term.                                                   *)
+(* number_vars for a term, a theorem, and a meta_rule.                       *)
 (* ------------------------------------------------------------------------- *)
 
-let number_vars_tm: int -> term -> term =
-  fun i tm -> instantiate (number_vars_inst i (frees tm)) tm;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* number_vars for a theorem.                                                *)
-(* ------------------------------------------------------------------------- *)
+let number_vars_tm: int -> term -> term = 
+  fun i tm -> mapvars (number_var i) tm;;
 
 let number_vars_thm: int -> thm -> thm =
-  fun i thm -> INSTANTIATE (number_vars_inst i (thm_frees thm)) thm;;
-
-
-(* ------------------------------------------------------------------------- *)
-(* number_vars for a meta_rule.                                              *)
-(* ------------------------------------------------------------------------- *)
+  fun i thm -> mapvars_thm (number_var i) thm;;
 
 let number_vars_meta_rule: int -> meta_rule -> meta_rule =
-  fun i rl -> inst_meta_rule (number_vars_inst i (meta_rule_frees rl)) rl;;
+  fun i rl -> mapvars_meta_rule (number_var i) rl;;
 
+
+(* ------------------------------------------------------------------------- *)
+(* Adds a prefix to a variable name. *)
+(* ------------------------------------------------------------------------- *)
+
+let prefix_var: string -> term -> term =
+  fun s -> rename_var (fun n -> s ^ n);; 
+
+(* ------------------------------------------------------------------------- *)
+(* Adds a prefix and a number to a variable name. *)
+(* ------------------------------------------------------------------------- *)
+
+let prefix_num_var: string -> int -> term -> term =
+  fun s i -> rename_var (fun n -> s ^ n ^ (string_of_int i));; 
 
 (* ------------------------------------------------------------------------- *)
 (* Eliminate numbers from variable names 
