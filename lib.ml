@@ -59,15 +59,20 @@ let remove_common_once wlist tlist =
 
 
 (* ------------------------------------------------------------------------- *)
-(* Partitions a list by filtering through each element of another list using *)
-(* function f. Each element is removed once.                                 *)
+(* Uses a function f to filter elements in list l from another list r.
+   Elements from l can only be matched once. 
+   Is the inverse of remove_list, and also generalized beyond equality. *)
 (* ------------------------------------------------------------------------- *)
 
-let partition_list f l t =
-  let pick x l,r =
-    let i,rest = remove (f x) r in
-    i::l,rest in
-  itlist pick l ([],t);;
+let filter_once f l r = 
+  let rec filter_once' f l r acc =
+    match r with
+    | [] -> rev acc
+    | (h :: t) -> 
+       try ( let li,rest = remove (C f h) l in
+             filter_once' f rest t (h :: acc) )
+       with Failure _ -> filter_once' f l t acc in
+  filter_once' f l r [];;
 
 
 (* ------------------------------------------------------------------------- *)
